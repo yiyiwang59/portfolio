@@ -22,7 +22,8 @@ const MarkdownRenderer = ({ documentationFile, className = '' }) => {
         setError(null);
         
         // Fetch the markdown file from public folder
-        const response = await fetch(`/docs/projects/${documentationFile}`);
+        const basePath = process.env.PUBLIC_URL || '';
+        const response = await fetch(`${basePath}/docs/projects/${documentationFile}`);
         if (!response.ok) {
           throw new Error(`Failed to load documentation: ${response.status}`);
         }

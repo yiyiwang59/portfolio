@@ -11,7 +11,8 @@ const BannerBackground = ({
   useEffect(() => {
     const checkBanner = async () => {
       try {
-        const bannerUrls = ['/images/banner.jpeg', '/images/banner.jpg'];
+        const basePath = process.env.PUBLIC_URL || '';
+        const bannerUrls = [`${basePath}/images/banner.jpeg`, `${basePath}/images/banner.jpg`];
         
         for (const url of bannerUrls) {
           try {
@@ -47,11 +48,12 @@ const BannerBackground = ({
   }
 
   if (bannerExists) {
+    const basePath = process.env.PUBLIC_URL || '';
     return (
       <div 
         className={`relative ${className}`}
         style={{
-          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(249, 250, 251, 0.95)), url(/images/banner.jpeg)`,
+          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.9), rgba(249, 250, 251, 0.95)), url(${basePath}/images/banner.jpeg)`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'

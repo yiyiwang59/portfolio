@@ -26,7 +26,8 @@ const ProfileImage = ({
   useEffect(() => {
     const checkImage = async () => {
       try {
-        const imageUrls = ['/images/profile_pic.jpeg', '/images/profile_pic.jpg'];
+        const basePath = process.env.PUBLIC_URL || '';
+        const imageUrls = [`${basePath}/images/profile_pic.jpeg`, `${basePath}/images/profile_pic.jpg`];
         
         for (const url of imageUrls) {
           try {
@@ -62,9 +63,10 @@ const ProfileImage = ({
   }
 
   if (imageExists) {
+    const basePath = process.env.PUBLIC_URL || '';
     return (
       <img
-        src="/images/profile_pic.jpeg"
+        src={`${basePath}/images/profile_pic.jpeg`}
         alt="Yiyi Wang - Profile"
         className={`${sizeClasses[size]} rounded-full object-cover shadow-xl ${className}`}
         onError={() => setImageExists(false)}

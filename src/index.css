@@ -1,0 +1,6 @@
+/* Basic CSS reset and Tailwind-like utility classes would go here */
+/* This file would contain your Tailwind CSS or custom styles */
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';

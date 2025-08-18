@@ -1,0 +1,26 @@
+# Image Upload Instructions
+
+## Quick Setup - Just drop your images here!
+
+Replace these files with your own:
+
+1. **profile_pic.jpeg** - Your profile photo (recommended: 400x400px, square)
+2. **banner.jpeg** - Hero section background (recommended: 1920x600px, landscape)
+
+The website will automatically use these images once you upload them.
+
+## File Requirements:
+- **Format**: JPEG (.jpeg or .jpg)
+- **Profile Picture**: Square aspect ratio works best (400x400px recommended)
+- **Banner**: Wide landscape format (1920x600px recommended)
+- **Size**: Keep under 2MB for fast loading
+
+## How to Upload:
+1. Navigate to `public/images/` folder
+2. Delete existing files (if any)
+3. Add your new images with exact names:
+   - `profile_pic.jpeg` (or `profile_pic.jpg`)
+   - `banner.jpeg` (or `banner.jpg`)
+4. Refresh your browser - images will update automatically!
+
+No code changes needed - the system handles everything automatically.

@@ -99,15 +99,15 @@ const AboutPage = () => (
               or Taylor Swift's latest album.
             </p>
             <div className="space-y-3">
-              <a href="#" className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition-colors">
+              <a href="mailto:yiyiwang5959@gmail.com" className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition-colors">
                 <Mail className="w-5 h-5" />
                 <span>yiyiwang5959@gmail.com</span>
               </a>
-              <a href="#" className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition-colors">
+              <a href="https://linkedin.com/in/yiyiwang59" className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition-colors">
                 <Linkedin className="w-5 h-5" />
                 <span>LinkedIn Profile</span>
               </a>
-              <a href="#" className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition-colors">
+              <a href="https://github.com/yiyiwang59" className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition-colors">
                 <Github className="w-5 h-5" />
                 <span>GitHub Profile</span>
               </a>

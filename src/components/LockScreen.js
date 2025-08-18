@@ -41,13 +41,13 @@ const LockScreen = ({
         </div>
         
         <div className="mt-8 flex justify-center space-x-6">
-          <a href="#" className="text-slate-400 hover:text-slate-600 transition-colors">
+          <a href="https://github.com/yiyiwang59" className="text-slate-400 hover:text-slate-600 transition-colors">
             <Github className="w-5 h-5" />
           </a>
-          <a href="#" className="text-slate-400 hover:text-slate-600 transition-colors">
+          <a href="https://linkedin.com/in/yiyiwang59" className="text-slate-400 hover:text-slate-600 transition-colors">
             <Linkedin className="w-5 h-5" />
           </a>
-          <a href="#" className="text-slate-400 hover:text-slate-600 transition-colors">
+          <a href="mailto:yiyi.wang@example.com" className="text-slate-400 hover:text-slate-600 transition-colors">
             <Mail className="w-5 h-5" />
           </a>
         </div>

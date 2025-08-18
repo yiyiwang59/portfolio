@@ -135,6 +135,41 @@ Your markdown files support:
 - ✅ **Architecture diagrams** (ASCII art)
 - ✅ **Professional styling** with beautiful formatting
 
+## 🚀 GitHub Pages Deployment
+
+### Quick Deployment
+
+Your portfolio is ready to deploy to GitHub Pages! Here's how:
+
+#### **Method 1: Manual Deployment (Immediate)**
+```bash
+# Build and deploy in one command
+npm run deploy
+```
+
+#### **Method 2: Automatic Deployment (Recommended)**
+1. **Push to GitHub**: `git push origin main`
+2. **Enable GitHub Pages**: Go to your repo → Settings → Pages → Source → "GitHub Actions"
+3. **Automatic Deploy**: Every push to `main` will auto-deploy via GitHub Actions
+
+### **Your Live URL**
+Once deployed, your portfolio will be available at:
+**https://yiyiwang59.github.io/portfolio**
+
+### **Repository Setup Requirements**
+Make sure your GitHub repository is named `portfolio` and is public. If you want a different URL, update the `homepage` field in `package.json`.
+
+### **Deployment Status**
+- ✅ Build configuration ready
+- ✅ GitHub Actions workflow configured  
+- ✅ Package.json deployment scripts added
+- ✅ Production build tested successfully
+
+### **Troubleshooting**
+- **404 Error**: Check that GitHub Pages is enabled in repo settings
+- **Blank Page**: Verify the `homepage` URL in package.json matches your repo
+- **Build Fails**: Run `npm run build` locally to check for errors
+
 ## Development Notes
 
 - All styling uses Tailwind CSS classes

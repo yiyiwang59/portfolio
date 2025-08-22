@@ -1,470 +1,429 @@
-# CareerLauncher Pipeline v1.0 Technical Documentation
+# CareerLauncher Data Pipeline: Technical Architecture & Implementation
 
-## System Overview
-
-CareerLauncher is a comprehensive ETL pipeline designed to process job listings at scale. The system handles the complete data lifecycle from raw web crawl data discovery through to cleaned, structured storage in a production database.
-
-## Architecture Diagram
-
-```
-┌─────────────────┐    ┌──────────────┐    ┌─────────────────┐
-│   CommonCrawl   │────│   Airflow    │────│   AWS Lambda    │
-│   (Data Source) │    │   (Orchestr.) │    │   (Processing)  │
-└─────────────────┘    └──────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌──────────────┐    ┌─────────────────┐
-│   URL Discovery │    │   S3 Bucket  │    │   Supabase      │
-│   (Client Sites)│    │   (Staging)  │    │   (Final DB)    │
-└─────────────────┘    └──────────────┘    └─────────────────┘
-```
-
-## Technology Stack
-
-### Infrastructure
-- **Apache Airflow**: Workflow orchestration and job scheduling
-- **AWS Lambda**: Serverless processing functions
-- **AWS S3**: Staging storage for batch processing
-- **Supabase**: PostgreSQL database with real-time capabilities
-
-### Processing
-- **Python 3.9+**: Core processing logic
-- **TypeScript**: Lambda functions for performance
-- **CommonCrawl**: Web crawl data source
-- **BeautifulSoup**: HTML parsing and extraction
-
-### Monitoring
-- **CloudWatch**: AWS service monitoring
-- **Airflow UI**: Pipeline monitoring and debugging
-- **Supabase Dashboard**: Database performance tracking
-
-## Data Flow Architecture
-
-### 1. URL Discovery Phase
-```python
-def discover_job_sites():
-    """
-    Extract job board URLs from CommonCrawl index
-    """
-    crawl_index = get_latest_crawl_index()
-    job_patterns = [
-        '*/jobs/*',
-        '*/careers/*',
-        '*/job-openings/*',
-        '*/employment/*'
-    ]
-    
-    discovered_urls = []
-    for pattern in job_patterns:
-        urls = query_common_crawl(crawl_index, pattern)
-        discovered_urls.extend(urls)
-        
-    return deduplicate_urls(discovered_urls)
-```
-
-### 2. Content Extraction
-```typescript
-export const extractJobData = async (url: string) => {
-    try {
-        const response = await fetch(url, {
-            timeout: 30000,
-            headers: {
-                'User-Agent': 'CareerLauncher/1.0 (+https://careerlauncher.io)'
-            }
-        });
-        
-        const html = await response.text();
-        const jobData = parseJobListing(html);
-        
-        return {
-            url,
-            extractedAt: new Date().toISOString(),
-            ...jobData
-        };
-    } catch (error) {
-        console.error(`Failed to extract from ${url}:`, error);
-        throw error;
-    }
-};
-```
-
-### 3. Data Processing Pipeline
-```python
-class JobDataProcessor:
-    def __init__(self):
-        self.s3_client = boto3.client('s3')
-        self.supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-        
-    def process_batch(self, s3_key: str):
-        """
-        Process a batch of job listings from S3
-        """
-        raw_data = self.download_from_s3(s3_key)
-        
-        processed_jobs = []
-        for job_data in raw_data:
-            try:
-                cleaned_job = self.clean_job_data(job_data)
-                enriched_job = self.enrich_job_data(cleaned_job)
-                processed_jobs.append(enriched_job)
-            except Exception as e:
-                self.log_processing_error(job_data, e)
-                
-        # Batch insert to database
-        self.bulk_insert_jobs(processed_jobs)
-        
-        return len(processed_jobs)
-```
-
-## Database Schema
-
-### Core Tables
-```sql
--- Companies table
-CREATE TABLE companies (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    domain VARCHAR(255) UNIQUE,
-    industry VARCHAR(100),
-    size_category VARCHAR(50),
-    location_hq VARCHAR(255),
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Job listings table
-CREATE TABLE job_listings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    company_id UUID REFERENCES companies(id),
-    title VARCHAR(500) NOT NULL,
-    description TEXT,
-    location VARCHAR(255),
-    salary_min DECIMAL(10,2),
-    salary_max DECIMAL(10,2),
-    salary_currency CHAR(3),
-    employment_type VARCHAR(50),
-    experience_level VARCHAR(50),
-    remote_allowed BOOLEAN DEFAULT FALSE,
-    source_url VARCHAR(1000),
-    posted_date DATE,
-    scraped_at TIMESTAMP DEFAULT NOW(),
-    processed_at TIMESTAMP,
-    status VARCHAR(20) DEFAULT 'active'
-);
-
--- Skills and requirements
-CREATE TABLE job_skills (
-    job_id UUID REFERENCES job_listings(id),
-    skill_name VARCHAR(100),
-    is_required BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY (job_id, skill_name)
-);
-
--- Location data
-CREATE TABLE locations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    city VARCHAR(100),
-    state_province VARCHAR(100),
-    country VARCHAR(100),
-    coordinates POINT,
-    timezone VARCHAR(50)
-);
-```
-
-### Indexes for Performance
-```sql
--- Search optimization
-CREATE INDEX idx_job_listings_title_gin ON job_listings 
-USING gin(to_tsvector('english', title));
-
-CREATE INDEX idx_job_listings_location ON job_listings(location);
-CREATE INDEX idx_job_listings_company_id ON job_listings(company_id);
-CREATE INDEX idx_job_listings_posted_date ON job_listings(posted_date);
-
--- Skills search
-CREATE INDEX idx_job_skills_name ON job_skills(skill_name);
-```
-
-## Airflow DAG Configuration
-
-```python
-from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
-from airflow.operators.bash_operator import BashOperator
-from datetime import datetime, timedelta
-
-default_args = {
-    'owner': 'careerlauncher',
-    'depends_on_past': False,
-    'start_date': datetime(2024, 1, 1),
-    'email_on_failure': True,
-    'email_on_retry': False,
-    'retries': 3,
-    'retry_delay': timedelta(minutes=15)
-}
-
-dag = DAG(
-    'job_data_pipeline',
-    default_args=default_args,
-    description='Daily job data processing pipeline',
-    schedule_interval='0 2 * * *',  # Daily at 2 AM
-    catchup=False,
-    max_active_runs=1
-)
-
-# Task definitions
-discover_urls_task = PythonOperator(
-    task_id='discover_job_urls',
-    python_callable=discover_job_sites,
-    dag=dag
-)
-
-extract_data_task = PythonOperator(
-    task_id='extract_job_data',
-    python_callable=lambda **context: trigger_lambda_extraction(
-        context['task_instance'].xcom_pull(task_ids='discover_job_urls')
-    ),
-    dag=dag
-)
-
-process_data_task = PythonOperator(
-    task_id='process_job_data',
-    python_callable=process_extracted_data,
-    dag=dag
-)
-
-# Task dependencies
-discover_urls_task >> extract_data_task >> process_data_task
-```
-
-## AWS Lambda Functions
-
-### Job Data Extractor
-```typescript
-import { APIGatewayProxyHandler } from 'aws-lambda';
-import { S3 } from 'aws-sdk';
-import * as cheerio from 'cheerio';
-
-export const handler: APIGatewayProxyHandler = async (event) => {
-    const { urls } = JSON.parse(event.body);
-    const s3 = new S3();
-    
-    const extractionPromises = urls.map(async (url: string) => {
-        try {
-            const jobData = await extractJobData(url);
-            return {
-                url,
-                success: true,
-                data: jobData
-            };
-        } catch (error) {
-            return {
-                url,
-                success: false,
-                error: error.message
-            };
-        }
-    });
-    
-    const results = await Promise.allSettled(extractionPromises);
-    
-    // Upload results to S3 for batch processing
-    const timestamp = new Date().toISOString();
-    const s3Key = `extractions/${timestamp}/batch.json`;
-    
-    await s3.putObject({
-        Bucket: 'careerlauncher-staging',
-        Key: s3Key,
-        Body: JSON.stringify(results),
-        ContentType: 'application/json'
-    }).promise();
-    
-    return {
-        statusCode: 200,
-        body: JSON.stringify({
-            processedUrls: urls.length,
-            s3Location: s3Key,
-            successRate: results.filter(r => r.status === 'fulfilled').length / results.length
-        })
-    };
-};
-```
-
-## Data Quality and Validation
-
-### Input Validation
-```python
-from pydantic import BaseModel, validator, HttpUrl
-from typing import Optional, List
-from datetime import date
-
-class JobListing(BaseModel):
-    title: str
-    company_name: str
-    location: str
-    description: str
-    source_url: HttpUrl
-    posted_date: Optional[date]
-    salary_min: Optional[float]
-    salary_max: Optional[float]
-    employment_type: Optional[str]
-    
-    @validator('title')
-    def title_must_not_be_empty(cls, v):
-        if not v.strip():
-            raise ValueError('Job title cannot be empty')
-        return v.strip()
-        
-    @validator('employment_type')
-    def valid_employment_type(cls, v):
-        valid_types = ['full-time', 'part-time', 'contract', 'internship', 'temporary']
-        if v and v.lower() not in valid_types:
-            raise ValueError(f'Employment type must be one of {valid_types}')
-        return v
-```
-
-### Data Cleaning Pipeline
-```python
-def clean_job_data(raw_job: dict) -> JobListing:
-    """
-    Clean and standardize job data
-    """
-    # Normalize text fields
-    raw_job['title'] = normalize_job_title(raw_job.get('title', ''))
-    raw_job['company_name'] = clean_company_name(raw_job.get('company_name', ''))
-    
-    # Standardize location
-    raw_job['location'] = standardize_location(raw_job.get('location', ''))
-    
-    # Parse salary information
-    salary_data = parse_salary(raw_job.get('salary', ''))
-    raw_job.update(salary_data)
-    
-    # Extract skills from description
-    skills = extract_skills(raw_job.get('description', ''))
-    raw_job['skills'] = skills
-    
-    return JobListing(**raw_job)
-```
-
-## Performance Monitoring
-
-### Key Metrics
-```python
-# Pipeline performance tracking
-PIPELINE_METRICS = {
-    'total_urls_discovered': Counter(),
-    'extraction_success_rate': Histogram(),
-    'processing_time_seconds': Histogram(),
-    'database_insert_rate': Counter(),
-    'error_rate_by_source': Counter(),
-}
-
-def track_pipeline_performance(func):
-    """Decorator to track pipeline performance metrics"""
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        try:
-            result = func(*args, **kwargs)
-            PIPELINE_METRICS['extraction_success_rate'].observe(1.0)
-            return result
-        except Exception as e:
-            PIPELINE_METRICS['extraction_success_rate'].observe(0.0)
-            PIPELINE_METRICS['error_rate_by_source'].inc()
-            raise
-        finally:
-            duration = time.time() - start_time
-            PIPELINE_METRICS['processing_time_seconds'].observe(duration)
-    return wrapper
-```
-
-### Alerting Configuration
-```python
-# Slack notifications for pipeline issues
-def send_pipeline_alert(message: str, severity: str = 'warning'):
-    webhook_url = os.getenv('SLACK_WEBHOOK_URL')
-    
-    color_map = {
-        'info': '#36a64f',
-        'warning': '#ffcc00',
-        'error': '#ff0000'
-    }
-    
-    payload = {
-        'attachments': [{
-            'color': color_map.get(severity, '#808080'),
-            'text': message,
-            'title': f'CareerLauncher Pipeline {severity.title()}',
-            'timestamp': int(time.time())
-        }]
-    }
-    
-    requests.post(webhook_url, json=payload)
-```
-
-## Deployment and Operations
-
-### Environment Configuration
-```yaml
-# docker-compose.yml for local development
-version: '3.8'
-services:
-  airflow:
-    image: apache/airflow:2.5.0
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://user:pass@postgres/airflow
-    volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-    
-  postgres:
-    image: postgres:13
-    environment:
-      POSTGRES_DB: airflow
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-    
-  redis:
-    image: redis:6
-```
-
-### CI/CD Pipeline
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy CareerLauncher Pipeline
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Deploy Lambda Functions
-        run: |
-          sam build
-          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
-      - name: Update Airflow DAGs
-        run: |
-          aws s3 sync ./dags s3://$AIRFLOW_S3_BUCKET/dags/
-```
-
-## Future Enhancements
-
-### Planned Features
-1. **Real-time Processing**: Stream processing for immediate job posting updates
-2. **ML Enhancement**: Job classification and salary prediction models
-3. **API Layer**: Public API for job search functionality
-4. **Advanced Analytics**: Company hiring trends and market insights
-
-### Scaling Considerations
-1. **Database Partitioning**: Partition job_listings by date for improved query performance
-2. **Caching Layer**: Redis cache for frequently accessed job searches
-3. **Load Balancing**: Multiple Lambda instances for high-volume processing
-4. **Data Archival**: Move older job listings to cold storage
+**A Production-Ready ETL Pipeline for Job Market Data Aggregation**
 
 ---
 
-*This documentation covers the production v1.0 implementation processing 45k+ job listings daily with 89% success rate.*
+## Executive Summary
+
+CareerLauncher is a collaborative data engineering project building a comprehensive job matching application platform. As the data pipeline architect, I designed and implemented a sophisticated ETL system that discovers, collects, processes, and serves job listing data from multiple recruitment platforms. 
+
+The pipeline successfully processes 45,000+ job listings from 1,500+ companies across multiple aggregators, achieving 89.9% data quality rates with a 15-minute end-to-end execution time. Built with modern cloud-native technologies, this production-ready system demonstrates advanced data engineering patterns including dynamic task orchestration, intelligent batching, and fault-tolerant distributed processing.
+
+---
+
+## Project Context & Collaboration
+
+**Timeline**: June 9, 2025 - August 18, 2025 (10 weeks)
+
+**Project Structure**: Collaborative development with clear ownership boundaries:
+- **Data Pipeline & ETL Architecture**: My primary responsibility (subject of this documentation)
+- **Web Scraping Infrastructure**: Partner's domain expertise
+- **Frontend Application**: Partner's responsibility
+
+**Business Objective**: Build a job matching platform that helps candidates discover relevant opportunities by analyzing job requirements against their qualifications. The data pipeline serves as the foundation, aggregating comprehensive job market data while avoiding legal restrictions of major platforms.
+
+**Current Status**: Production-ready data pipeline (MVP deployment pending frontend integration)
+
+---
+
+## Technical Architecture Overview
+
+### Technology Stack
+- **Orchestration**: Apache Airflow with dynamic task generation
+- **Compute**: AWS Lambda (TypeScript/Node.js)
+- **Data Processing**: Python for discovery, TypeScript for ETL operations
+- **Storage**: AWS S3 (staging), Supabase PostgreSQL (production)
+- **External Data**: CommonCrawl web crawl database
+- **APIs**: SmartRecruiters, Greenhouse job aggregator platforms
+
+### Core Architecture Principles
+- **Microservices Design**: Isolated Lambda functions for each processing stage
+- **Dynamic Scaling**: Task count automatically adjusts to data volume
+- **Batch Processing**: Memory-efficient processing of large datasets
+- **Fault Tolerance**: Individual component failures don't cascade
+- **Data Quality**: Multi-stage validation and error recovery
+
+---
+
+## System Components
+
+### 1. Company Discovery Engine (CommonCrawl Integration)
+
+**Purpose**: Systematically identify companies using specific job aggregator platforms
+
+**Implementation**: Python-based service that queries CommonCrawl's web crawl database
+```python
+# Query CommonCrawl for job aggregator patterns
+patterns = [
+    'greenhouse.io/*/jobs',
+    'smartrecruiters.com/*/jobs',
+    'jobs.*.com/greenhouse'
+]
+```
+
+**Process**:
+1. Execute SQL queries against CommonCrawl's petabyte-scale dataset
+2. Extract company URLs using pattern matching
+3. Deduplicate and normalize company identifiers
+4. Generate CSV files organized by aggregator platform
+5. Store in S3 for downstream processing
+
+**Output**: 
+- `smartrecruiters_clients.csv` (1,200+ companies)
+- `greenhouse_clients.csv` (800+ companies)
+
+### 2. Job Collection Pipeline (Airflow + Lambda)
+
+**Architecture**: Dynamic Airflow DAG with Lambda-based parallel processing
+
+**Key Innovation**: `.expand()` task mapping that creates tasks based on actual data volume
+```python
+# Dynamic task generation based on company count
+batch_configs = generate_batch_configs(company_count, batch_size=50)
+results = collect_jobs_batch.expand(batch_config=batch_configs)
+```
+
+**Lambda Function**: `runJobServiceLambda`
+- Processes 50 companies per invocation
+- Makes API calls to SmartRecruiters/Greenhouse
+- Handles rate limiting and authentication
+- Stores raw JSON responses in Supabase
+
+**Performance Results**:
+- SmartRecruiters: 99.6% API success rate
+- Greenhouse: 51% API success rate (due to authentication restrictions)
+- Parallel execution of 30+ Lambda functions simultaneously
+
+### 3. Data Cleaning & Transformation Pipeline
+
+**Challenge Solved**: Original monolithic approach caused Lambda timeouts with large datasets
+
+**Solution**: Intelligent batching with S3-based staging
+- Process companies in batches of 150 (optimized for memory usage)
+- Use S3 as intermediate storage between processing stages
+- Handle relational data (companies, industries, locations) efficiently
+
+**Lambda Function**: `cleaningServiceLambda`
+
+**Process Flow**:
+1. Query raw API responses from Supabase (150 companies per batch)
+2. Parse platform-specific JSON schemas into unified format
+3. Extract and normalize:
+   - Company information and create/update company records
+   - Job locations (city, state, country)
+   - Industry classifications
+   - Job metadata (titles, descriptions, requirements)
+4. Save cleaned data to S3 as JSON files with session tracking
+5. Generate processing metadata and statistics
+
+**Key Technical Achievement**: Solved memory management issues that were causing 15-minute Lambda timeouts by implementing chunked processing and explicit garbage collection.
+
+### 4. Database Loading Pipeline
+
+**Challenge Solved**: Parallel database uploads were overwhelming Supabase connection limits (9 simultaneous uploads causing 100% failure rate)
+
+**Solution**: Sequential processing with intelligent delays
+- Process S3 files one at a time instead of parallel uploads
+- 5-second delays between upload batches
+- Optimized batch size (500 records per upload)
+- URL-based conflict resolution for duplicate job postings
+
+**Lambda Function**: `loadJobsLambda`
+
+**Results After Optimization**:
+- Loading success rate: 0% → 100%
+- Processing time: Consistent 5-8 minutes for full dataset
+- Data quality: 89.9% of processed jobs successfully loaded
+
+---
+
+## Architecture Diagrams
+
+### [DIAGRAM 1: Overall System Architecture]
+![[architecture.png]]
+### [DIAGRAM 2: ETL Data Flow]
+
+![[data_flow.png]]
+### [DIAGRAM 3: Supabase Data Schema]
+![[data_schema.png]]
+
+---
+
+## Engineering Problem-Solving Journey
+
+*This section demonstrates the iterative problem-solving approach that led to the final production-ready architecture.*
+
+### Challenge 1: Memory Management & Lambda Timeouts
+
+**Initial Problem**: Processing all company data in a single Lambda function
+- Lambda functions timing out after 15 minutes
+- Memory overflow with large datasets
+- Unable to process more than 200-300 companies reliably
+
+**Iteration 1**: Reduced batch sizes
+- Decreased from 250 to 150 companies per batch
+- Helped but didn't eliminate timeout issues entirely
+
+**Final Solution**: Architectural separation with S3 staging
+- Separated collection, cleaning, and loading into distinct services
+- Used S3 as intermediate storage between processing stages
+- Implemented explicit garbage collection and memory management
+- **Result**: Eliminated timeouts, now reliably processes 1,500+ companies
+
+### Challenge 2: Database Connection Overwhelm
+
+**Problem Discovery**: 
+- Multiple parallel upload processes overwhelming Supabase
+- 9 simultaneous Lambda functions trying to upload to database
+- 100% failure rate on database uploads due to connection limits
+
+**Debugging Process**:
+```
+Initial logs showed: "Read timeout on endpoint URL"
+Investigation revealed: Database connection pool exhaustion
+Root cause: Parallel processing exceeding connection limits
+```
+
+**Solution Evolution**:
+1. **First Attempt**: Increase connection timeouts → Still failed
+2. **Second Attempt**: Reduce batch sizes → Minimal improvement  
+3. **Final Solution**: Sequential processing with controlled delays
+   - Changed from parallel to sequential file processing
+   - Added 5-second delays between upload batches
+   - Optimized individual batch sizes to 500 records
+   - **Result**: 0% → 100% upload success rate
+
+### Challenge 3: Dynamic Scaling Based on Data Volume
+
+**Problem**: Pipeline needed to handle varying company counts without manual configuration
+
+**Solution**: Dynamic task generation using Airflow's `.expand()` functionality
+```python
+# Automatically scales from 5 to 500+ parallel tasks based on data
+def generate_batch_configs(company_count, batch_size):
+    total_batches = math.ceil(company_count / batch_size)
+    return [create_batch_config(i) for i in range(total_batches)]
+
+# Creates exactly the right number of tasks
+batch_results = process_batch.expand(batch_config=batch_configs)
+```
+
+**Impact**: System automatically adapts to any data volume without code changes
+
+### Challenge 4: API Rate Limiting & Error Handling
+
+**SmartRecruiters Success**: 99.6% success rate
+- Proper authentication handling
+- Appropriate request delays (100ms between companies)
+- Robust retry logic with exponential backoff
+
+**Greenhouse Challenges**: 51% success rate
+- Authentication restrictions on many company endpoints
+- Inconsistent API access patterns
+- Rate limiting variations by company
+
+**Implemented Solutions**:
+- Platform-specific error handling strategies
+- Graceful degradation (continue processing other companies if one fails)
+- Comprehensive error logging for debugging and optimization
+
+---
+
+## Technical Implementation Details
+
+### Database Schema
+
+**Raw Data Storage**:
+```sql
+source_job_listing_responses (
+  id UUID PRIMARY KEY,
+  aggregator_platform TEXT,
+  company_id TEXT,
+  response JSONB,        -- Complete API response
+  created_at TIMESTAMP
+)
+```
+
+**Clean Data Schema**:
+```sql
+job_listing (
+  id UUID PRIMARY KEY,
+  title TEXT NOT NULL,
+  company_id UUID REFERENCES companies(id),
+  aggregator_id UUID REFERENCES aggregators(id),
+  location_id UUID REFERENCES locations(id),
+  industry_id UUID REFERENCES industries(id),
+  url TEXT UNIQUE,       -- Used for deduplication
+  posted_date TIMESTAMP,
+  last_updated TIMESTAMP DEFAULT NOW(),
+  description TEXT,
+  department TEXT,
+  employment_type TEXT,
+  experience_level TEXT
+)
+```
+
+### Batch Processing Strategy
+
+**Collection Phase**: 50 companies per Lambda
+- Optimized for API rate limits
+- Small enough to avoid timeouts
+- Large enough for efficiency
+
+**Cleaning Phase**: 150 companies per Lambda  
+- Balances memory usage vs. processing time
+- Handles variable job counts per company
+- Manages relational data updates efficiently
+
+**Loading Phase**: 500 records per upload batch
+- Optimized for database performance
+- Prevents connection pool exhaustion
+- Provides good progress granularity
+
+### Session Management
+
+**Session ID Format**: `8-17-2025-14-30`
+- Tracks complete pipeline runs
+- Enables data lineage and debugging
+- Allows partial reprocessing if needed
+
+**S3 File Organization**:
+```
+s3://careerlauncher/staging/cleanedJobListings/
+├── collect-8-17-2025-14-30/
+│   ├── batch0_uuid123.json (metadata + 8,585 jobs)
+│   ├── batch1_uuid456.json (metadata + 7,432 jobs)
+│   └── batch2_uuid789.json (metadata + 6,891 jobs)
+```
+
+---
+
+## Performance Metrics & Results
+
+### Data Processing Volume
+- **Companies Processed**: 1,500+ across 2 aggregators
+- **Raw API Responses**: 45,000+ job listings collected
+- **Clean Data Output**: 40,000+ validated job records in database
+- **Processing Time**: 15 minutes end-to-end
+
+### Success Rates by Component
+- **CommonCrawl Discovery**: 100% (deterministic SQL queries)
+- **SmartRecruiters Collection**: 99.6% API success rate
+- **Greenhouse Collection**: 51% API success rate (authentication limitations)
+- **Data Cleaning**: ~99% (estimated based on validation rules)
+- **Database Loading**: 89.9% final loading success rate
+
+### System Performance
+- **Parallel Processing**: 30+ simultaneous Lambda functions
+- **Memory Efficiency**: No timeouts after batching optimization
+- **Database Performance**: 100% upload success after sequential optimization
+- **Error Recovery**: Individual failures don't impact overall pipeline
+
+### Resource Optimization
+- **Lambda Memory**: 1024MB optimized for processing workload
+- **S3 Storage**: ~2GB for staging data per pipeline run
+- **Database Connections**: Managed to stay within Supabase Pro limits
+- **API Rate Compliance**: Respected all platform rate limits
+
+---
+
+## Current Architecture Benefits
+
+### 1. Scalability
+- **Horizontal Scaling**: Add more aggregators without architectural changes
+- **Volume Scaling**: Handles 10x data increases automatically
+- **Resource Scaling**: Lambda functions scale to zero when not in use
+
+### 2. Reliability  
+- **Fault Tolerance**: Individual component failures are isolated
+- **Data Quality**: Multi-stage validation ensures high data integrity
+- **Error Recovery**: Comprehensive retry mechanisms and logging
+- **Monitoring**: Real-time visibility into pipeline health
+
+### 3. Maintainability
+- **Modular Design**: Each component has single responsibility
+- **Clear Data Flow**: Easy to trace data through pipeline stages
+- **Session Tracking**: Complete audit trail for every pipeline run
+- **Comprehensive Logging**: Detailed information for debugging
+
+### 4. Cost Efficiency
+- **Serverless Architecture**: Pay only for actual processing time
+- **Optimized Batching**: Minimizes API calls and database operations
+- **Intelligent Staging**: S3 costs minimal compared to compute savings
+
+---
+
+## Future Optimization Opportunities
+
+### 1. Asynchronous Processing Enhancement
+**Current Bottleneck**: All Lambda functions triggered simultaneously can overwhelm downstream services
+
+**Planned Solution**: Implement controlled concurrency
+- Batch Lambda invocations (e.g., 5 functions at a time)
+- Wait for batch completion before triggering next batch
+- Maintain throughput while preventing resource exhaustion
+
+### 2. Advanced Error Handling
+- Circuit breaker patterns for API failures
+- Automatic retry with increasing delays
+- Dead letter queues for failed items
+
+### 3. Real-time Processing
+- Stream processing for incremental updates
+- Change data capture for real-time job posting alerts
+- Event-driven architecture for immediate processing
+
+### 4. Enhanced Monitoring
+- Custom CloudWatch dashboards
+- Automated alerting for pipeline failures
+- Performance trend analysis and optimization recommendations
+
+---
+
+## Technical Skills Demonstrated
+
+### Data Engineering
+- **ETL Pipeline Design**: Complete data lifecycle management
+- **Batch Processing**: Efficient handling of large datasets
+- **Data Quality**: Validation, cleaning, and normalization processes
+- **Schema Design**: Relational database modeling and optimization
+
+### Cloud Architecture
+- **Serverless Computing**: AWS Lambda design and optimization
+- **Event-Driven Systems**: Airflow orchestration with dynamic scaling
+- **Storage Optimization**: S3 staging patterns and lifecycle management
+- **Database Performance**: Connection pooling and batch optimization
+
+### Problem Solving
+- **Performance Optimization**: Memory management and timeout resolution
+- **Scalability Solutions**: Dynamic task generation and resource management
+- **Error Handling**: Robust retry mechanisms and graceful degradation
+- **System Integration**: API management and rate limiting compliance
+
+### Tools & Technologies
+- **Apache Airflow**: Advanced DAG patterns with dynamic task mapping
+- **AWS Lambda**: TypeScript/Node.js serverless development
+- **PostgreSQL**: Complex queries and database optimization
+- **Python**: Data processing and CommonCrawl integration
+- **API Integration**: RESTful services with authentication and rate limiting
+
+---
+
+## Conclusion
+
+This project represents a comprehensive data engineering solution built from the ground up to handle real-world challenges of large-scale data processing. The evolution from initial concept to production-ready pipeline demonstrates practical problem-solving skills and deep understanding of distributed systems architecture.
+
+Key achievements include:
+- **Successful scaling** from proof-of-concept to processing 45,000+ records
+- **Performance optimization** eliminating timeouts and achieving 100% upload reliability  
+- **Sophisticated orchestration** using dynamic Airflow patterns rarely seen in production
+- **Production-ready architecture** with proper error handling, monitoring, and resource management
+
+The pipeline is currently ready for deployment and actively supports the development of CareerLauncher's job matching platform, demonstrating the direct business impact of technical engineering decisions.
+
+---
+
+*CareerLauncher Data Pipeline v1.0*  
+*Architecture Documentation - August 2025*  
+*Production-Ready ETL System for Job Market Intelligence*

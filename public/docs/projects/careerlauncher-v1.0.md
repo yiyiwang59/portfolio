@@ -141,12 +141,13 @@ results = collect_jobs_batch.expand(batch_config=batch_configs)
 ## Architecture Diagrams
 
 ### [DIAGRAM 1: Overall System Architecture]
-![[architecture.png]]
-### [DIAGRAM 2: ETL Data Flow]
+![System Architecture](../images/projects/careerlauncher-v1.0/architecture.png)
 
-![[data_flow.png]]
+### [DIAGRAM 2: ETL Data Flow]
+![ETL Data Flow](../images/projects/careerlauncher-v1.0/data_flow.png)
+
 ### [DIAGRAM 3: Supabase Data Schema]
-![[data_schema.png]]
+![Database Schema](../images/projects/careerlauncher-v1.0/data_schema.png)
 
 ---
 

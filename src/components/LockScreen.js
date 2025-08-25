@@ -16,7 +16,7 @@ const LockScreen = ({
             <ProfileImage size="medium" />
           </div>
           <h1 className="text-4xl font-bold text-slate-900 mb-2">Yiyi Wang</h1>
-          <p className="text-lg text-slate-600">Data Engineer with a consulting past and an ML future</p>
+          <p className="text-lg text-slate-600">Data Engineer | Salesforce Professional</p>
         </div>
         
         <div className="space-y-4">

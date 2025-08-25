@@ -1,30 +1,30 @@
 export const journeyChapters = [
   {
-    id: 'consulting',
-    title: 'The Consultant Years',
+    id: 'fusion',
+    title: 'Planting Seeds',
     icon: '💼',
-    date: '2020-2024',
+    date: '2020-2022',
     description: 'Started at Fusion Risk Management building on Salesforce, where I discovered my love for architecting data solutions that actually solve business problems.'
+  },
+  {
+    id: 'salesloft',
+    title: 'Competencies Tested',
+    icon: '🧪',
+    date: '2022-2024',
+    description: 'Had joined on the technical services team at Salesloft, where I specialized in building integrations, internal data tools, and custom salesforce solutions. It was here where my long-term career goal of becoming an engineer was fully realized.'
   },
   {
     id: 'pivot',
     title: 'The Pivot',
     icon: '🔄',
     date: '2024',
-    description: 'Got fired for being "too technical" at Salesloft - best thing that ever happened. Realized I was meant to build, not just configure.'
+    description: 'The direction of my role was shifting away from custom technical solutions and towards consulting for out-of-box products. Ultimately, my specialized role on the team was no longer aligned with the needs of the business or my long term career goals.'
   },
   {
-    id: 'foundations',
-    title: 'Building Foundations',
-    icon: '🏗️',
-    date: '2024-Present',
-    description: 'Dove into CS50, built real applications, contributed to production pipelines. From zero to data engineer in record time.'
-  },
-  {
-    id: 'next',
-    title: "What's Next",
+    id: 'self-studying',
+    title: "Carving My Own Path",
     icon: '🚀',
-    date: 'Starting 2025',
-    description: 'Georgia Tech OMSA, eventually OMSCS. The goal: ML-powered data systems that anticipate needs before users know they have them.'
+    date: '2025 - Present',
+    description: 'Enrolled in Georgia Tech OMSA, self-studied Harvard\'s CS50, worked on personal projects to deepen my understanding of data engineering and web development.'
   }
 ];

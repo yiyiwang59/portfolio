@@ -23,12 +23,12 @@ const HomePage = ({ setActiveSection }) => (
                 the humans who use them.
               </p>
               <div className="flex gap-4">
-                <button className="bg-slate-900 text-white px-8 py-3 rounded-xl hover:bg-slate-800 transition-all hover:shadow-lg">
+                {/* <button className="bg-slate-900 text-white px-8 py-3 rounded-xl hover:bg-slate-800 transition-all hover:shadow-lg">
                   View Resume
                 </button>
                 <button className="border border-gray-300 text-gray-700 px-8 py-3 rounded-xl hover:bg-gray-50 transition-all">
                   Get in Touch
-                </button>
+                </button> */}
               </div>
             </div>
             {/* Profile picture */}
@@ -39,7 +39,7 @@ const HomePage = ({ setActiveSection }) => (
           <div className="grid grid-cols-3 gap-8 mt-16 max-w-3xl">
             <div className="text-center">
               <div className="text-3xl font-bold text-gray-900">5+</div>
-              <div className="text-sm text-gray-600 mt-1">Years designing scalable schemas</div>
+              <div className="text-sm text-gray-600 mt-1">Years building scalable data solutions</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-gray-900">5x</div>
@@ -96,7 +96,7 @@ const HomePage = ({ setActiveSection }) => (
             </div>
             <div className="flex items-center gap-3">
               <Brain className="w-5 h-5 text-gray-500" />
-              <span className="text-gray-700">Starting GT OMSA Jan 2025</span>
+              <span className="text-gray-700">Started Georgia Tech OMSA Aug 2025</span>
             </div>
             <div className="flex items-center gap-3">
               <Target className="w-5 h-5 text-gray-500" />

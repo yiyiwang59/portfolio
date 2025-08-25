@@ -4,7 +4,7 @@ export const education = [
     title: 'Georgia Tech',
     degree: 'MS Analytics (OMSA)',
     status: 'In Progress',
-    date: 'Starting January 2025',
+    date: 'Started August 2025',
     icon: '🐝',
     color: 'bg-yellow-50',
     iconColor: 'text-yellow-600',
@@ -15,20 +15,20 @@ export const education = [
         code: 'ISYE 6501',
         name: 'Introduction to Analytics Modeling',
         status: 'In Progress',
-        semester: 'Spring 2025',
+        semester: 'Fall 2025',
         description: 'Overview of analytics modeling techniques and applications',
         topics: ['Regression', 'Classification', 'Clustering', 'Optimization'],
-        takeaways: 'Foundation for ML applications in data engineering'
+        takeaways: 'In Progress'
       },
       {
-        id: 'cse6040',
-        code: 'CSE 6040',
-        name: 'Computing for Data Analysis',
+        id: 'cs6400',
+        code: 'CS 6400',
+        name: 'Database Systems Concepts and Design',
         status: 'In Progress',
-        semester: 'Spring 2025',
-        description: 'Python programming for data manipulation and analysis',
-        topics: ['NumPy', 'Pandas', 'SQL', 'Performance Optimization'],
-        takeaways: 'Advanced Python techniques for large-scale data processing'
+        semester: 'Fall 2025',
+        description: 'Understand and apply the concepts of data independence, database and database management, system architecture, and the role and placement of a database management system the application stack',
+        topics: ['Extended Entity Relationship Model', 'Relational Model', 'Relational algebra', 'calculus and SQL', 'database normalization', 'efficiency', 'indexing'],
+        takeaways: 'In Progress'
       }
     ]
   },

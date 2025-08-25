@@ -20,11 +20,12 @@ const encryptData = (data, password) => {
 
 const encryptFile = (inputPath, outputPath, password) => {
   try {
-    // Read file as text and remove ES6 export syntax
+    // Read file as text and convert ES6 exports to CommonJS
     let content = fs.readFileSync(inputPath, 'utf8');
     
-    // Remove export statements and evaluate the module
-    content = content.replace(/export\s+(default\s+)?/g, '');
+    // Convert named exports to CommonJS exports
+    // Replace: export const varName = {...} with module.exports.varName = {...}
+    content = content.replace(/export\s+const\s+(\w+)\s*=/g, 'module.exports.$1 =');
     
     // Create a temporary file to require
     const tempPath = inputPath + '.temp.js';
@@ -32,10 +33,14 @@ const encryptFile = (inputPath, outputPath, password) => {
     
     // Clear require cache and load the data
     delete require.cache[require.resolve(tempPath)];
-    const data = require(tempPath);
+    const moduleExports = require(tempPath);
     
     // Clean up temp file
     fs.unlinkSync(tempPath);
+    
+    // Get the main data export (assume it's the first/main export)
+    const dataKey = Object.keys(moduleExports)[0];
+    const data = moduleExports[dataKey];
     
     const encrypted = encryptData(data, password);
     

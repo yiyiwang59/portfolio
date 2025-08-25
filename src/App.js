@@ -14,6 +14,9 @@ import JourneyPage from './pages/JourneyPage';
 import EducationPage from './pages/EducationPage';
 import AboutPage from './pages/AboutPage';
 
+// Secure Context
+import { SecureContentProvider } from './contexts/SecureContentContext';
+
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -33,11 +36,14 @@ const App = () => {
   }, []);
 
   // Simple password check
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (password === 'momodeku') {
-      setIsAuthenticated(true);
+      // Store auth info first
       sessionStorage.setItem('portfolio-auth', 'true');
+      sessionStorage.setItem('portfolio-key', password);
+      // Then set authenticated state
+      setIsAuthenticated(true);
       setShowPasswordError(false);
     } else {
       setShowPasswordError(true);
@@ -47,7 +53,7 @@ const App = () => {
 
   // Main render logic
   return (
-    <>
+    <SecureContentProvider>
       {!isAuthenticated ? (
         <LockScreen 
           password={password}
@@ -137,7 +143,7 @@ const App = () => {
           )}
         </>
       )}
-    </>
+    </SecureContentProvider>
   );
 };
 

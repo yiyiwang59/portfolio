@@ -20,7 +20,23 @@ const encryptData = (data, password) => {
 
 const encryptFile = (inputPath, outputPath, password) => {
   try {
-    const data = require(inputPath);
+    // Read file as text and remove ES6 export syntax
+    let content = fs.readFileSync(inputPath, 'utf8');
+    
+    // Remove export statements and evaluate the module
+    content = content.replace(/export\s+(default\s+)?/g, '');
+    
+    // Create a temporary file to require
+    const tempPath = inputPath + '.temp.js';
+    fs.writeFileSync(tempPath, content);
+    
+    // Clear require cache and load the data
+    delete require.cache[require.resolve(tempPath)];
+    const data = require(tempPath);
+    
+    // Clean up temp file
+    fs.unlinkSync(tempPath);
+    
     const encrypted = encryptData(data, password);
     
     const outputContent = `export const encryptedData = ${JSON.stringify(encrypted)};`;

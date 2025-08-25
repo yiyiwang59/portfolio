@@ -98,7 +98,7 @@ export const SecureContentProvider = ({ children }) => {
       setLoading(prev => ({ ...prev, [contentType]: false }));
       throw error;
     }
-  }, [decryptedContent, loading]);
+  }, [decryptedContent, loading, decryptionKey]);
 
   const getContent = useCallback((contentType, key) => {
     const content = decryptedContent[contentType];

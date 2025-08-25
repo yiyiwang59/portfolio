@@ -13,7 +13,7 @@ const AboutPage = () => {
       try {
         setLoading(true);
         const content = await loadEncryptedContent('about');
-        setAboutData(content.aboutData);
+        setAboutData(content);
         setError(null);
       } catch (err) {
         setError(err.message);

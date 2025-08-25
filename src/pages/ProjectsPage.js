@@ -16,7 +16,7 @@ const ProjectsPage = ({
       try {
         setLoading(true);
         const content = await loadEncryptedContent('projects');
-        setProjects(content.projects);
+        setProjects(content);
         setError(null);
       } catch (err) {
         setError(err.message);

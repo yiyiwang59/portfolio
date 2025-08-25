@@ -13,7 +13,7 @@ const EducationPage = ({ setSelectedEducation }) => {
       try {
         setLoading(true);
         const content = await loadEncryptedContent('education');
-        setEducation(content.education);
+        setEducation(content);
         setError(null);
       } catch (err) {
         setError(err.message);

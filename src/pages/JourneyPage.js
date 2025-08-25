@@ -15,7 +15,7 @@ const JourneyPage = () => {
       try {
         setLoading(true);
         const content = await loadEncryptedContent('journey');
-        setJourneyChapters(content.journeyChapters);
+        setJourneyChapters(content);
         setError(null);
       } catch (err) {
         setError(err.message);

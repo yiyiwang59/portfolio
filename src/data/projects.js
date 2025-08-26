@@ -11,19 +11,6 @@ export const projects = [
     skills: ['Python', 'Flask', 'SQLite', 'NLP APIs', 'JavaScript', 'HTML/CSS'],
     versions: [
       {
-        version: 'v0.1-beta',
-        title: 'Airtable + Mochi Integration',
-        date: 'March 2024',
-        stack: ['Python', 'Airtable API', 'Mochi API'],
-        description: 'Initial proof of concept using Airtable as database and Mochi for flashcards',
-        highlights: [
-          'Automated vocabulary extraction with pinyin lookup',
-          'Unit tested API integrations',
-          'Batch processing for flashcard deck creation'
-        ],
-        documentationFile: 'hanzismith-v0.1-beta.md'
-      },
-      {
         version: 'v1.0',
         title: 'Full Stack Web Application',
         date: 'July 2024',
@@ -36,6 +23,19 @@ export const projects = [
           'Multi-user support with auth'
         ],
         documentationFile: 'hanzismith-v1.0.md'
+      }, 
+      {
+        version: 'v0.1-beta',
+        title: 'Airtable + Mochi Integration',
+        date: 'March 2024',
+        stack: ['Python', 'Airtable API', 'Mochi API'],
+        description: 'Initial proof of concept using Airtable as database and Mochi for flashcards',
+        highlights: [
+          'Automated vocabulary extraction with pinyin lookup',
+          'Unit tested API integrations',
+          'Batch processing for flashcard deck creation'
+        ],
+        documentationFile: 'hanzismith-v0.1-beta.md'
       }
     ]
   },

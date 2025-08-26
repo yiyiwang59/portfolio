@@ -96,14 +96,14 @@ const ProjectDetail = ({
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-gray-900">Technical Documentation</h3>
             <div className="flex gap-4">
-              {/* <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+              <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
                 <Github className="w-5 h-5" />
                 Repository
-              </button> */}
-              {/* <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+              </button>
+              <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
                 <ExternalLink className="w-5 h-5" />
                 Live Demo
-              </button> */}
+              </button>
             </div>
           </div>
           

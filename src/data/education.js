@@ -16,7 +16,7 @@ export const education = [
         name: 'Introduction to Analytics Modeling',
         status: 'In Progress',
         semester: 'Fall 2025',
-        description: 'Overview of analytics modeling techniques and applications',
+        description: 'An introduction to important and commonly used models in Analytics, as well as aspects of the modeling process.',
         topics: ['Regression', 'Classification', 'Clustering', 'Optimization'],
         takeaways: 'In Progress'
       },
@@ -26,7 +26,7 @@ export const education = [
         name: 'Database Systems Concepts and Design',
         status: 'In Progress',
         semester: 'Fall 2025',
-        description: 'Understand and apply the concepts of data independence, database and database management, system architecture, and the role and placement of a database management system the application stack',
+        description: 'Understand and apply the concepts of data independence, database and database management, system architecture, and the role and placement of a database management system.',
         topics: ['Extended Entity Relationship Model', 'Relational Model', 'Relational algebra', 'calculus and SQL', 'database normalization', 'efficiency', 'indexing'],
         takeaways: 'In Progress'
       }

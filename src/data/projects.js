@@ -13,7 +13,7 @@ export const projects = [
       {
         version: 'v1.0',
         title: 'Full Stack Web Application',
-        date: 'July 2024',
+        date: 'December 2024',
         stack: ['Python', 'Flask', 'SQLite', 'Bootstrap', 'JavaScript'],
         description: 'CS50 final project - complete web application with user authentication',
         highlights: [
@@ -27,7 +27,7 @@ export const projects = [
       {
         version: 'v0.1-beta',
         title: 'Airtable + Mochi Integration',
-        date: 'March 2024',
+        date: 'July 2024',
         stack: ['Python', 'Airtable API', 'Mochi API'],
         description: 'Initial proof of concept using Airtable as database and Mochi for flashcards',
         highlights: [
@@ -53,7 +53,7 @@ export const projects = [
       {
         version: 'v1.0',
         title: 'Production Pipeline',
-        date: 'December 2024',
+        date: 'August 2025',
         stack: ['Python', 'TypeScript', 'Airflow', 'AWS', 'Supabase'],
         description: 'Full production pipeline with async processing and batch optimization',
         highlights: [
